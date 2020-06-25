@@ -5,27 +5,35 @@
 Use the timeit and cProfile libraries to find bad code.
 """
 
-__author__ = "???"
+__author__ = "chrisescobedo0617"
 
 import cProfile
 import pstats
 import functools
+from timeit import Timer
 
 
 def profile(func):
     """A cProfile decorator function that can be used to
     measure performance.
     """
-    # Be sure to review the lesson material on decorators.
-    # You need to understand how they are constructed and used.
-    raise NotImplementedError("Complete this decorator function")
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        pr = cProfile.Profile()
+        pr.enable()
+        result = func(*args, **kwargs)
+        pr.disable()
+        ps = pstats.Stats(pr)
+        ps.strip_dirs().sort_stats('cumulative').print_stats()
+        return result
+    return wrapper
 
 
-def read_movies(src):
-    """Returns a list of movie titles."""
-    print(f'Reading file: {src}')
-    with open(src, 'r') as f:
-        return f.read().splitlines()
+#def read_movies(src):
+   # """Returns a list of movie titles."""
+    #print(f'Reading file: {src}')
+    #with open(src, 'r') as f:
+        #return f.read().splitlines()
 
 
 def is_duplicate(title, movies):
@@ -36,21 +44,38 @@ def is_duplicate(title, movies):
     return False
 
 
+@profile
 def find_duplicate_movies(src):
     """Returns a list of duplicate movies from a src list."""
-    movies = read_movies(src)
-    duplicates = []
-    while movies:
-        movie = movies.pop()
-        if is_duplicate(movie, movies):
-            duplicates.append(movie)
-    return duplicates
+    print(f'Reading file: {src}')
+    with open(src, 'r') as f:
+        movies = f.read().splitlines()
+    duplicates = {}
+    dups = []
+    for movie in movies:
+        if duplicates.get(movie) == None:
+            duplicates[movie] = 1
+        else:
+            duplicates[movie] += 1
+    for key, value in duplicates.items():
+        if 2 == value:
+            dups.append(key)
+    #while movies:
+        #movie = movies.pop()
+        #if is_duplicate(movie, movies):
+            #duplicates.append(movie)
+    return dups
 
 
 def timeit_helper():
     """Part A: Obtain some profiling measurements using timeit."""
-    # YOUR CODE GOES HERE
-    pass
+    #from timeit import Timer
+    runs_per_repeat = 3
+    num_repeats = 7
+    t = Timer(stmt= "main()", setup='import tuneup')
+    result = t.repeat(repeat=num_repeats,number=runs_per_repeat)
+    best_time = min(result) / float(runs_per_repeat)
+    return f"Best time across 7 repeats of 5 runs per repeat: {best_time} sec"
 
 
 def main():
@@ -58,6 +83,8 @@ def main():
     result = find_duplicate_movies('movies.txt')
     print(f'Found {len(result)} duplicate movies:')
     print('\n'.join(result))
+    timeit_helper()
+    
 
 
 if __name__ == '__main__':
